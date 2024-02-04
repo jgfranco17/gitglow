@@ -1,0 +1,7 @@
+{
+    "name": "gitglow",
+    "author": "Chino Franco",
+    "repository": "https://github.com/jgfranco17/gitglow",
+    "version": "0.0.1",
+    "languages": ["Go"]
+}
