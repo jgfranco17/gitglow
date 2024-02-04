@@ -1,9 +1,12 @@
 package scan
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetDotFilePath(t *testing.T) {
@@ -15,13 +18,9 @@ func TestGetDotFilePath(t *testing.T) {
 
 func TestOpenFile(t *testing.T) {
 	filePath := "testfile.txt"
-
-	// Cleanup if the file exists
 	defer func() {
 		_ = os.Remove(filePath)
 	}()
-
-	// Create a test file
 	file, err := os.Create(filePath)
 	if err != nil {
 		t.Fatalf("Error creating test file: %v", err)
@@ -31,70 +30,40 @@ func TestOpenFile(t *testing.T) {
 	// Open the file
 	f := openFile(filePath)
 	defer f.Close()
-
-	if f == nil {
-		t.Error("Expected a non-nil file object, got nil.")
-	}
+	assert.NotNil(t, f, "Expected a non-nil file object, got nil.")
 }
 
 func TestParseFileLinesToSlice(t *testing.T) {
 	filePath := "testfile.txt"
-
-	// Cleanup if the file exists
 	defer func() {
 		_ = os.Remove(filePath)
 	}()
 
-	// Create a test file
 	content := "line1\nline2\nline3"
 	err := ioutil.WriteFile(filePath, []byte(content), 0644)
-	if err != nil {
-		t.Fatalf("Error creating test file: %v", err)
-	}
-
+	assert.NoError(t, err)
 	lines := ParseFileLinesToSlice(filePath)
-
 	expectedLines := []string{"line1", "line2", "line3"}
-
-	if len(lines) != len(expectedLines) {
-		t.Errorf("Expected %d lines, got %d", len(expectedLines), len(lines))
-	}
-
+	assert.Equal(t, expectedLines, lines, fmt.Sprintf("Expected %d lines, got %d", len(expectedLines), len(lines)))
 	for i, line := range lines {
-		if line != expectedLines[i] {
-			t.Errorf("Expected line '%s', got '%s'", expectedLines[i], line)
-		}
+		assert.Equal(t, expectedLines[i], line, fmt.Sprintf("Expected line '%s', got '%s'", expectedLines[i], line))
 	}
 }
 
-// Add more tests for other functions as needed
-// ...
-
 func TestScan(t *testing.T) {
-	// Create a temporary folder for testing
+	// Create a temporary folder and repository for testing
 	tmpFolder := "test_folder"
-	err := os.Mkdir(tmpFolder, 0755)
-	if err != nil {
-		t.Fatalf("Error creating temporary folder: %v", err)
-	}
+	tmpFolderCreationErr := os.Mkdir(tmpFolder, 0755)
+	assert.NoError(t, tmpFolderCreationErr, "Could not create temporary folder")
 	defer os.RemoveAll(tmpFolder)
-
-	// Create a test git repository
 	testRepo := tmpFolder + "/test_repo/.git"
-	err = os.MkdirAll(testRepo, 0755)
-	if err != nil {
-		t.Fatalf("Error creating test repository: %v", err)
-	}
+	testRepoCreationErr := os.MkdirAll(testRepo, 0755)
+	assert.NoError(t, testRepoCreationErr, "Could not create test repository")
 
-	// Run the scan
+	// Test scan
 	Scan(tmpFolder)
-
-	// Check if the dot file was created
 	dotFilePath := GetDotFilePath()
-	if _, err := os.Stat(dotFilePath); os.IsNotExist(err) {
-		t.Errorf("Expected dot file to be created, but it was not.")
-	}
-
-	// Clean up
+	_, filePathErr := os.Stat(dotFilePath)
+	assert.False(t, os.IsNotExist(filePathErr))
 	_ = os.Remove(dotFilePath)
 }
